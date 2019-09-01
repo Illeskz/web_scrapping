@@ -3,9 +3,16 @@
 import argparse
 import logging
 logging.basicConfig(level=logging.INFO)
+import re
+
+from requests.exceptions import HTTPError
+from urllib3.exceptions import MaxRetryError
 
 import news_page_objets as news
 from common import config
+
+is_well_formed_link = re.compile(r'^https?://.+/.+$') #https://example.com/hello
+is_root_path = re.compile(r'^/.+$') # /some-text
 
 logger = logging.getLogger(__name__)
 
@@ -13,10 +20,45 @@ def _news_scraper(news_site_uid):
     host = config()['news_sites'][news_site_uid]['url']
 
     logging.info('Beginning scraper fo {}'.format(host))
+    logging.info('Finding links in homepage...')
+
     homepage = news.HomePage(news_site_uid, host)
 
+    articles = []
     for link in homepage.article_links:
-        print(link)
+        article = _fetch_article(news_site_uid, host, link)
+
+        if article:
+            logger.info('Article fetched!!')
+            articles.append(article)
+            print(article.title)
+
+    print(len(articles))
+
+def _fetch_article(news_site_uid, host, link):
+    logger.info('Start fetching artticle at {}'.format(link))
+
+    article = None
+    try:
+        article = news.ArticlePage(news_site_uid, _build_link(host, link))
+    except (HTTPError, MaxRetryError) as e:
+        logger.warn('error while fetching the article', exc_info=False)
+
+    if article and not article.body:
+        logger.warn('Invalid article. There is no body')
+        return None
+
+    return article
+
+
+def _build_link(host, link):
+    if is_well_formed_link.match(link):
+        return link
+    elif is_root_path.match(link):
+        return '{}{}'.format(host, link)
+    else:
+        return '{host}/{url}'.format(host=host, url=link) #este es otro formato para imprimir
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()

@@ -12,4 +12,4 @@ news_sites:
     queries:
       homepage_articles_links: '.articulo-titulo a'
       article_body: '.articulo-cuerpo'
-      article_title: '.articulo-titulares h1'
+      article_title: '.articulo-titulo'
