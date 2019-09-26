@@ -56,5 +56,5 @@ class ArticlePage(NewsPage):
 
     @property
     def url(self):
-        result = self._url(self._queries['article_url'])
-        return result[0].text if len(result) else ''
+        result = self._url
+        return result if len(result) else ''
